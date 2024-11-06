@@ -12,7 +12,7 @@ type LoginScreenProps = {
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => (
   <View style={globalStyles.container}>
     <Image 
-      source={require('../../assets/Ayuda.png')}
+      source={require('../../assets/logo.png')}
       style={{ width: 120, height: 120, alignSelf: 'center', marginBottom: 20 }}
     />
     <Text style={globalStyles.title}>Inicia sesión</Text>

@@ -1,4 +1,5 @@
 import { StyleSheet } from 'react-native';
+import Input from '../components/Input';
 
 export const globalStyles = StyleSheet.create({
   container: {
@@ -10,6 +11,7 @@ export const globalStyles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 10,
+    color:'black'
   },
   subtitle: {
     fontSize: 16,
@@ -23,7 +25,9 @@ export const globalStyles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 5,
     color: '#4CAF50',
+    
   },
+
   button: {
     backgroundColor: '#4CAF50',
     padding: 15,

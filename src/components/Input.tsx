@@ -17,6 +17,7 @@ const Input: React.FC<InputProps> = ({ label, placeholder, secureTextEntry, keyb
       placeholder={placeholder}
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
+      placeholderTextColor="black" 
     />
   </View>
 );
@@ -27,6 +28,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
+    color: 'black', 
   },
 });
 
