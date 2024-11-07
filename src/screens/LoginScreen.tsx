@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     width: '40%',
     height: '15%',
     alignSelf: 'center',
-    marginBottom: 30,
+    marginBottom: 3,
   },
   title: {
     ...globalStyles.title,

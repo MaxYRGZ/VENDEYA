@@ -25,4 +25,5 @@ const CreateAccountScreen: React.FC<CreateAccountScreenProps> = ({ navigation })
   </View>
 );
 
+
 export default CreateAccountScreen;

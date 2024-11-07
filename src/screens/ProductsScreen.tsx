@@ -73,7 +73,6 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     ...globalStyles.container,
-    paddingTop: 60, // Make room for the add button
   },
   scrollView: {
     flex: 1,
