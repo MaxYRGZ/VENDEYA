@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { globalStyles } from '../styles/globalStyles';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -20,8 +21,11 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       tx.executeSql(
         'SELECT * FROM cuenta WHERE usuario = ? AND contraseña = ?',
         [username, password],
-        (_, { rows }) => {
+        async (_, { rows }) => {
           if (rows.length > 0) {
+            const user = rows.item(0);
+            await AsyncStorage.setItem('userId', user.id.toString());
+            await AsyncStorage.setItem('username', user.usuario);
             navigation.navigate('Sales');
           } else {
             Alert.alert('Error', 'Usuario o contraseña incorrectos');

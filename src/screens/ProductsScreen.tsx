@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { globalStyles } from '../styles/globalStyles';
 import Input from '../components/Input';
 import Button from '../components/Button';
@@ -8,11 +9,6 @@ import LocalDB from '../../persistence/localdb';
 
 type ProductsScreenProps = {
   navigation: NativeStackNavigationProp<any>;
-  route: {
-    params: {
-      userId: number;
-    };
-  };
 };
 
 interface ProductInput {
@@ -21,33 +17,19 @@ interface ProductInput {
   price: string;
 }
 
-const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation, route }) => {
+const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
   const [products, setProducts] = useState<ProductInput[]>([
     { id: 1, name: '', price: '' }
   ]);
-  const { userId } = route.params;
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadProducts();
+    loadUserId();
   }, []);
 
-  const loadProducts = async () => {
-    const db = await LocalDB.connect();
-    db.transaction((tx) => {
-      tx.executeSql(
-        'SELECT * FROM productos WHERE usuario_id = ?',
-        [userId],
-        (_, { rows }) => {
-          const loadedProducts = rows.raw().map((row) => ({
-            id: row.id,
-            name: row.nombre_producto,
-            price: row.ganancia_producto,
-          }));
-          setProducts(loadedProducts.length > 0 ? loadedProducts : [{ id: 1, name: '', price: '' }]);
-        },
-        (error) => console.error('Error loading products:', error)
-      );
-    });
+  const loadUserId = async () => {
+    const id = await AsyncStorage.getItem('userId');
+    setUserId(id);
   };
 
   const addNewProduct = () => {
@@ -62,6 +44,11 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation, route }) =>
   };
 
   const saveProducts = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'No se pudo obtener la información del usuario');
+      return;
+    }
+
     const db = await LocalDB.connect();
     db.transaction((tx) => {
       products.forEach((product) => {
@@ -119,6 +106,7 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation, route }) =>
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {
