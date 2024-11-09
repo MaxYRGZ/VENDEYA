@@ -18,23 +18,71 @@ interface ProductInput {
 }
 
 const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
-  const [products, setProducts] = useState<ProductInput[]>([
-    { id: 1, name: '', price: '' }
-  ]);
+  const [products, setProducts] = useState<ProductInput[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadUserId();
+    loadUserIdAndProducts();
   }, []);
 
-  const loadUserId = async () => {
+  const loadUserIdAndProducts = async () => {
     const id = await AsyncStorage.getItem('userId');
     setUserId(id);
+    if (id) {
+      await loadProducts(id);
+    }
   };
 
-  const addNewProduct = () => {
-    const newId = products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 1;
-    setProducts([...products, { id: newId, name: '', price: '' }]);
+  const loadProducts = async (userId: string) => {
+    const db = await LocalDB.connect();
+    return new Promise<void>((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'SELECT * FROM productos WHERE usuario_id = ?',
+          [userId],
+          (_, { rows }) => {
+            const loadedProducts = rows.raw().map((row) => ({
+              id: row.id,
+              name: row.nombre_producto,
+              price: row.ganancia_producto,
+            }));
+            setProducts(loadedProducts);
+            resolve();
+          },
+          (_, error) => {
+            console.error('Error loading products:', error);
+            reject(error);
+          }
+        );
+      });
+    });
+  };
+
+  const addNewProduct = async () => {
+    if (!userId) {
+      Alert.alert('Error', 'No se pudo obtener la información del usuario');
+      return;
+    }
+
+    const db = await LocalDB.connect();
+    return new Promise<void>((resolve, reject) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          'SELECT MAX(id) as maxId FROM productos WHERE usuario_id = ?',
+          [userId],
+          (_, { rows }) => {
+            const maxId = rows.item(0).maxId || 0;
+            const newId = maxId + 1;
+            setProducts([...products, { id: newId, name: '', price: '' }]);
+            resolve();
+          },
+          (_, error) => {
+            console.error('Error getting max product id:', error);
+            reject(error);
+          }
+        );
+      });
+    });
   };
 
   const updateProduct = (id: number, field: 'name' | 'price', value: string) => {
@@ -106,7 +154,6 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
