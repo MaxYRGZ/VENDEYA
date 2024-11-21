@@ -7,6 +7,7 @@ interface InputProps {
   placeholder: string;
   secureTextEntry?: boolean;
   keyboardType?: 'default' | 'numeric' | 'email-address';
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters'; // Propiedad añadida
   value?: string;
   onChangeText?: (text: string) => void;
 }
@@ -16,8 +17,9 @@ const Input: React.FC<InputProps> = ({
   placeholder,
   secureTextEntry,
   keyboardType = 'default',
+  autoCapitalize = 'none', // Valor predeterminado
   value,
-  onChangeText
+  onChangeText,
 }) => (
   <View style={globalStyles.inputContainer}>
     <Text style={globalStyles.label}>{label}</Text>
@@ -27,6 +29,7 @@ const Input: React.FC<InputProps> = ({
       placeholderTextColor="#999"
       secureTextEntry={secureTextEntry}
       keyboardType={keyboardType}
+      autoCapitalize={autoCapitalize} // Pasamos autoCapitalize
       value={value}
       onChangeText={onChangeText}
     />
@@ -40,6 +43,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     color: 'black',
+    fontSize: 16, // Mejor legibilidad
   },
 });
 

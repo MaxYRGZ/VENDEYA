@@ -124,14 +124,48 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
     }
   };
 
+const handleDeleteAccount = async () => {
+  Alert.alert(
+    'Eliminar cuenta',
+    '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
+    [
+      {
+        text: 'Cancelar',
+        style: 'cancel'
+      },
+      {
+        text: 'Eliminar',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            if (userId) {
+              await LocalDB.deleteAccount(parseInt(userId));
+            }
+            await AsyncStorage.removeItem('userId');
+            await AsyncStorage.removeItem('username');
+            // Eliminar la base de datos
+            await LocalDB.deleteDatabase();
+            // Reinicializar la base de datos
+            await LocalDB.init();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Login' }],
+            });
+          } catch (error) {
+            console.error('Error deleting account:', error);
+            Alert.alert('Error', 'No se pudo eliminar la cuenta');
+          }
+        }
+      }
+    ]
+  );
+};
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.headerButton}>
-          <Image
-            source={require('../../assets/back-arrow.png')}
-            style={styles.headerButtonImage}
-          />
+        <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton}>
+          <Text style={styles.deleteAccountButtonText}>Eliminar</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Ventas</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Products')} style={styles.headerButton}>
@@ -180,6 +214,15 @@ const styles = StyleSheet.create({
   headerButtonImage: {
     width: 24,
     height: 24,
+  },
+  deleteAccountButton: {
+    padding: 3,
+    backgroundColor: '#FF0000',
+    borderRadius: 3,
+  },
+  deleteAccountButtonText: {
+    color: 'white',
+    fontSize: 10,
   },
   title: {
     ...globalStyles.title,

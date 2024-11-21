@@ -20,6 +20,7 @@ interface ProductInput {
 const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
   const [products, setProducts] = useState<ProductInput[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
+  const [nextId, setNextId] = useState(1);
 
   useEffect(() => {
     loadUserIdAndProducts();
@@ -47,6 +48,7 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
               price: row.ganancia_producto,
             }));
             setProducts(loadedProducts);
+            setNextId(Math.max(...loadedProducts.map(p => p.id), 0) + 1);
             resolve();
           },
           (_, error) => {
@@ -58,30 +60,9 @@ const ProductsScreen: React.FC<ProductsScreenProps> = ({ navigation }) => {
     });
   };
 
-  const addNewProduct = async () => {
-    if (!userId) {
-      Alert.alert('Error', 'No se pudo obtener la información del usuario');
-      return;
-    }
-    const db = await LocalDB.connect();
-    return new Promise<void>((resolve, reject) => {
-      db.transaction((tx) => {
-        tx.executeSql(
-          'SELECT MAX(id) as maxId FROM productos WHERE usuario_id = ?',
-          [userId],
-          (_, { rows }) => {
-            const maxId = rows.item(0).maxId || 0;
-            const newId = maxId + 1;
-            setProducts([...products, { id: newId, name: '', price: '' }]);
-            resolve();
-          },
-          (_, error) => {
-            console.error('Error getting max product id:', error);
-            reject(error);
-          }
-        );
-      });
-    });
+  const addNewProduct = () => {
+    setProducts([...products, { id: nextId, name: '', price: '' }]);
+    setNextId(nextId + 1);
   };
 
   const updateProduct = (id: number, field: 'name' | 'price', value: string) => {

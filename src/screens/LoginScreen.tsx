@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Image, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,6 +14,20 @@ type LoginScreenProps = {
 const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+
+  useEffect(() => {
+    const initializeDatabase = async () => {
+      try {
+        await LocalDB.init();
+        console.log('Database initialized or already exists');
+      } catch (error) {
+        console.error('Error initializing database:', error);
+        Alert.alert('Error', 'No se pudo inicializar la base de datos');
+      }
+    };
+
+    initializeDatabase();
+  }, []);
 
   const handleLogin = async () => {
     const db = await LocalDB.connect();
@@ -37,6 +51,14 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         }
       );
     });
+  };
+
+  const handleForgotPassword = () => {
+    if (username.trim() === '') {
+      Alert.alert('Error', 'Por favor, ingresa tu nombre de usuario primero');
+    } else {
+      navigation.navigate('ForgotPassword', { username });
+    }
   };
 
   return (
@@ -67,7 +89,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
         
         <TouchableOpacity 
           style={styles.forgotPasswordButton}
-          onPress={() => {/* Handle forgot password */}}
+          onPress={handleForgotPassword}
         >
           <Text style={styles.forgotPasswordText}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
@@ -99,7 +121,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...globalStyles.title,
-   
   },
   subtitle: {
     ...globalStyles.subtitle,
