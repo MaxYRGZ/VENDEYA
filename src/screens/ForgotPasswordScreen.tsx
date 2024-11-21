@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Alert } from 'react-native';
+import { View, Text, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { globalStyles } from '../styles/globalStyles';
 import Button from '../components/Button';
 import Input from '../components/Input';
 import LocalDB from '../../persistence/localdb';
+import Clipboard from '@react-native-clipboard/clipboard'; // Import Clipboard
 
 type ForgotPasswordScreenProps = {
   navigation: NativeStackNavigationProp<any>;
@@ -81,6 +82,13 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation,
     }
   };
 
+  const handleCopyToClipboard = () => {
+    if (newPassword) {
+      Clipboard.setString(newPassword);
+      Alert.alert('Contraseña copiada', 'La nueva contraseña ha sido copiada al portapapeles.');
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Recuperar contraseña</Text>
@@ -113,7 +121,12 @@ const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({ navigation,
       {newPassword && (
         <View style={styles.newPasswordContainer}>
           <Text style={styles.newPasswordTitle}>Tu nueva contraseña es:</Text>
-          <Text style={styles.newPassword}>{newPassword}</Text>
+          <View style={styles.passwordContainer}>
+            <Text style={styles.newPassword}>{newPassword}</Text>
+            <TouchableOpacity onPress={handleCopyToClipboard} style={styles.copyButton}>
+              <Text style={styles.copyButtonText}>Copiar</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.newPasswordInstructions}>Por favor, cámbiala después de iniciar sesión.</Text>
         </View>
       )}
@@ -138,12 +151,13 @@ const styles = StyleSheet.create({
   newPasswordContainer: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: '#e8f5e9',
+    backgroundColor: 'white',
     borderRadius: 5,
   },
   newPasswordTitle: {
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: 'bold',
+    color: 'black',
     marginBottom: 5,
   },
   newPassword: {
@@ -155,6 +169,20 @@ const styles = StyleSheet.create({
   newPasswordInstructions: {
     fontSize: 14,
     fontStyle: 'italic',
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  copyButton: {
+    marginLeft: 10,
+    backgroundColor: '#4CAF50',
+    padding: 5,
+    borderRadius: 5,
+  },
+  copyButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 
