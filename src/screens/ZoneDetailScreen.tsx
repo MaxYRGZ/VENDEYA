@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { globalStyles } from '../styles/globalStyles';
 import LocalDB from '../../persistence/localdb';
@@ -14,13 +14,20 @@ interface ProductSale {
   ganancia: number;
 }
 
+interface ZoneCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
 const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
   const { zone } = route.params;
   const [productSales, setProductSales] = useState<ProductSale[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
+  const [zoneCoordinates, setZoneCoordinates] = useState<ZoneCoordinates | null>(null);
 
   useEffect(() => {
     loadZoneDetails();
+    loadZoneCoordinates();
   }, [zone]);
 
   const loadZoneDetails = async () => {
@@ -47,9 +54,40 @@ const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
     });
   };
 
+  const loadZoneCoordinates = async () => {
+    const db = await LocalDB.connect();
+    db.transaction((tx) => {
+      tx.executeSql(
+        'SELECT latitude, longitude FROM zonas WHERE nombre = ?',
+        [zone],
+        (_, { rows }) => {
+          if (rows.length > 0) {
+            setZoneCoordinates({
+              latitude: rows.item(0).latitude,
+              longitude: rows.item(0).longitude
+            });
+          }
+        },
+        (_, error) => console.error('Error loading zone coordinates:', error)
+      );
+    });
+  };
+
   return (
     <ScrollView style={globalStyles.container}>
       <Text style={globalStyles.title}>Zona {zone}</Text>
+      
+      {zoneCoordinates && (
+        <View style={styles.mapContainer}>
+          <View style={styles.map}>
+            <View style={[styles.marker, { left: '50%', top: '50%' }]} />
+          </View>
+          <Text style={styles.coordinatesText}>
+            Lat: {zoneCoordinates.latitude.toFixed(6)}, Lon: {zoneCoordinates.longitude.toFixed(6)}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.earningsContainer}>
         <Text style={globalStyles.subtitle}>Ganancias</Text>
         {productSales.map((sale, index) => (
@@ -77,6 +115,30 @@ const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+  mapContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+  },
+  map: {
+    width: Dimensions.get('window').width - 40,
+    height: 200,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  marker: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#4CAF50',
+    position: 'absolute',
+  },
+  coordinatesText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#666',
+  },
   earningsContainer: {
     flex: 1,
     marginTop: 20,

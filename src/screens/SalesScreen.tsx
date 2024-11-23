@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image, Dimensions } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -23,19 +23,30 @@ interface Location {
   longitude: number;
 }
 
+const MAP_WIDTH = 300;
+const MAP_HEIGHT = 200;
+const MARKER_SIZE = 20;
+
 const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentZone, setCurrentZone] = useState<string>('');
   const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
+  const [mapUrl, setMapUrl] = useState<string>('');
 
   useFocusEffect(
     React.useCallback(() => {
       loadUserIdAndProducts();
-      const locationInterval = setInterval(getCurrentLocation, 5000); // Update location every 5 seconds
+      const locationInterval = setInterval(getCurrentLocation, 5000);
       return () => clearInterval(locationInterval);
     }, [])
   );
+
+  useEffect(() => {
+    if (currentLocation) {
+      updateMapImage();
+    }
+  }, [currentLocation]);
 
   const loadUserIdAndProducts = async () => {
     const id = await AsyncStorage.getItem('userId');
@@ -74,6 +85,16 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
       (error) => console.error('Error getting location:', error),
       { enableHighAccuracy: true, timeout: 20000, maximumAge: 1000 }
     );
+  };
+
+  const updateMapImage = () => {
+    if (currentLocation) {
+      const { latitude, longitude } = currentLocation;
+      const zoom = 15;
+      const apiKey = 'AIzaSyCE8AHpJQXpaOTNGQMuZ3Wu_AqTdKYfOOY'; // Reemplaza esto con tu API key de Google Maps
+      const url = `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=${zoom}&size=${MAP_WIDTH}x${MAP_HEIGHT}&maptype=roadmap&markers=color:red%7C${latitude},${longitude}&key=${apiKey}`;
+      setMapUrl(url);
+    }
   };
 
   const updateProductCount = (id: number, increment: boolean) => {
@@ -124,7 +145,6 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
         await LocalDB.saveSale(product.id, product.count, currentZone, parseInt(userId));
       }
       Alert.alert('Éxito', 'Venta agregada correctamente');
-      // Reset product counts after successful sale
       setProducts(products.map(product => ({ ...product, count: 0 })));
     } catch (error) {
       console.error('Error saving sale:', error);
@@ -151,9 +171,7 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
               }
               await AsyncStorage.removeItem('userId');
               await AsyncStorage.removeItem('username');
-              // Eliminar la base de datos
               await LocalDB.deleteDatabase();
-              // Reinicializar la base de datos
               await LocalDB.init();
               navigation.reset({
                 index: 0,
@@ -186,9 +204,27 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
       <View style={styles.locationContainer}>
         <Text style={styles.zoneText}>Zona actual: {currentZone}</Text>
         {currentLocation && (
-          <Text style={styles.locationText}>
-            Ubicación: {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
-          </Text>
+          <View>
+            <Text style={styles.locationText}>
+              Latitud: {currentLocation.latitude.toFixed(6)}
+            </Text>
+            <Text style={styles.locationText}>
+              Longitud: {currentLocation.longitude.toFixed(6)}
+            </Text>
+          </View>
+        )}
+      </View>
+      <View style={styles.mapContainer}>
+        {mapUrl ? (
+          <Image
+            source={{ uri: mapUrl }}
+            style={styles.mapImage}
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={styles.mapPlaceholder}>
+            <Text>Cargando mapa...</Text>
+          </View>
         )}
       </View>
       {products.length > 0 ? (
@@ -253,6 +289,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 5,
+  },
+  mapContainer: {
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT,
+    marginBottom: 10,
+    alignSelf: 'center',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  mapImage: {
+    width: '100%',
+    height: '100%',
+  },
+  mapPlaceholder: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   productItem: {
     flexDirection: 'row',
