@@ -18,15 +18,22 @@ interface Product {
   count: number;
 }
 
+interface Location {
+  latitude: number;
+  longitude: number;
+}
+
 const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentZone, setCurrentZone] = useState<string>('');
+  const [currentLocation, setCurrentLocation] = useState<Location | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
       loadUserIdAndProducts();
-      getCurrentLocation();
+      const locationInterval = setInterval(getCurrentLocation, 5000); // Update location every 5 seconds
+      return () => clearInterval(locationInterval);
     }, [])
   );
 
@@ -60,6 +67,7 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
     Geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
+        setCurrentLocation({ latitude, longitude });
         const zone = await LocalDB.getZoneFromCoordinates(latitude, longitude);
         setCurrentZone(zone);
       },
@@ -124,42 +132,42 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
     }
   };
 
-const handleDeleteAccount = async () => {
-  Alert.alert(
-    'Eliminar cuenta',
-    '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
-    [
-      {
-        text: 'Cancelar',
-        style: 'cancel'
-      },
-      {
-        text: 'Eliminar',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            if (userId) {
-              await LocalDB.deleteAccount(parseInt(userId));
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Eliminar cuenta',
+      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              if (userId) {
+                await LocalDB.deleteAccount(parseInt(userId));
+              }
+              await AsyncStorage.removeItem('userId');
+              await AsyncStorage.removeItem('username');
+              // Eliminar la base de datos
+              await LocalDB.deleteDatabase();
+              // Reinicializar la base de datos
+              await LocalDB.init();
+              navigation.reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
+            } catch (error) {
+              console.error('Error deleting account:', error);
+              Alert.alert('Error', 'No se pudo eliminar la cuenta');
             }
-            await AsyncStorage.removeItem('userId');
-            await AsyncStorage.removeItem('username');
-            // Eliminar la base de datos
-            await LocalDB.deleteDatabase();
-            // Reinicializar la base de datos
-            await LocalDB.init();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Login' }],
-            });
-          } catch (error) {
-            console.error('Error deleting account:', error);
-            Alert.alert('Error', 'No se pudo eliminar la cuenta');
           }
         }
-      }
-    ]
-  );
-};
+      ]
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -175,7 +183,14 @@ const handleDeleteAccount = async () => {
           />
         </TouchableOpacity>
       </View>
-      <Text style={styles.zoneText}>Zona actual: {currentZone}</Text>
+      <View style={styles.locationContainer}>
+        <Text style={styles.zoneText}>Zona actual: {currentZone}</Text>
+        {currentLocation && (
+          <Text style={styles.locationText}>
+            Ubicación: {currentLocation.latitude.toFixed(6)}, {currentLocation.longitude.toFixed(6)}
+          </Text>
+        )}
+      </View>
       {products.length > 0 ? (
         <FlatList
           data={products}
@@ -227,10 +242,17 @@ const styles = StyleSheet.create({
   title: {
     ...globalStyles.title,
   },
+  locationContainer: {
+    marginBottom: 10,
+  },
   zoneText: {
     fontSize: 16,
-    marginBottom: 10,
     color: '#4CAF50',
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
   },
   productItem: {
     flexDirection: 'row',
