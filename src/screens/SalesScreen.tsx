@@ -129,8 +129,8 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
   );
 
   const handleAddSale = async () => {
-    if (!userId) {
-      Alert.alert('Error', 'No se pudo obtener la información del usuario');
+    if (!userId || !currentLocation) {
+      Alert.alert('Error', 'No se pudo obtener la información del usuario o la ubicación');
       return;
     }
 
@@ -142,7 +142,14 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
 
     try {
       for (const product of productsToSave) {
-        await LocalDB.saveSale(product.id, product.count, currentZone, parseInt(userId));
+        await LocalDB.saveSale(
+          product.id, 
+          product.count, 
+          currentZone, 
+          parseInt(userId),
+          currentLocation.latitude,
+          currentLocation.longitude
+        );
       }
       Alert.alert('Éxito', 'Venta agregada correctamente');
       setProducts(products.map(product => ({ ...product, count: 0 })));
@@ -252,7 +259,8 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     ...globalStyles.container,
-  },
+  
+},
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -366,3 +374,4 @@ const styles = StyleSheet.create({
 });
 
 export default SalesScreen;
+

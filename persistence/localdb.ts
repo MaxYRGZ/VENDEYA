@@ -40,7 +40,7 @@ export default class LocalDB {
           (_, error) => console.error('Error creating table Productos:', error)
         );
 
-        // Crear tabla ventas
+        // Crear tabla ventas con latitude y longitude
         tx.executeSql(
           `CREATE TABLE IF NOT EXISTS ventas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,6 +49,8 @@ export default class LocalDB {
             zona TEXT,
             fecha DATETIME DEFAULT CURRENT_TIMESTAMP,
             usuario_id INTEGER,
+            latitude REAL,
+            longitude REAL,
             FOREIGN KEY (producto_id) REFERENCES productos(id),
             FOREIGN KEY (usuario_id) REFERENCES cuenta(id)
           )`,
@@ -112,13 +114,13 @@ export default class LocalDB {
     });
   }
 
-  static async saveSale(productoId: number, cantidad: number, zona: string, usuarioId: number) {
+  static async saveSale(productoId: number, cantidad: number, zona: string, usuarioId: number, latitude: number, longitude: number) {
     const db = await LocalDB.connect();
     return new Promise<number>((resolve, reject) => {
       db.transaction((tx) => {
         tx.executeSql(
-          'INSERT INTO ventas (producto_id, cantidad, zona, usuario_id) VALUES (?, ?, ?, ?)',
-          [productoId, cantidad, zona, usuarioId],
+          'INSERT INTO ventas (producto_id, cantidad, zona, usuario_id, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?)',
+          [productoId, cantidad, zona, usuarioId, latitude, longitude],
           (_, result) => {
             if (result.insertId) {
               resolve(result.insertId);
@@ -142,7 +144,6 @@ export default class LocalDB {
     return `Zone_${Math.floor(latitude)}_${Math.floor(longitude)}`;
   }
 
-  // Nuevo método para eliminar una cuenta
   static async deleteAccount(userId: number) {
     const db = await this.connect();
     return new Promise<void>((resolve, reject) => {
@@ -157,8 +158,8 @@ export default class LocalDB {
     });
   }
 
-  // Nuevo método para eliminar la base de datos
   static async deleteDatabase() {
     return SQLite.deleteDatabase({ name: 'veneya', location: 'default' });
   }
 }
+

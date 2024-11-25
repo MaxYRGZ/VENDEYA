@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, Image } from 'react-native';
 import { RouteProp } from '@react-navigation/native';
 import { globalStyles } from '../styles/globalStyles';
 import LocalDB from '../../persistence/localdb';
@@ -12,39 +12,38 @@ interface ProductSale {
   nombre_producto: string;
   cantidad: number;
   ganancia: number;
-}
-
-interface ZoneCoordinates {
   latitude: number;
   longitude: number;
 }
+
+const MAP_WIDTH = 300;
+const MAP_HEIGHT = 200;
 
 const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
   const { zone } = route.params;
   const [productSales, setProductSales] = useState<ProductSale[]>([]);
   const [totalEarnings, setTotalEarnings] = useState(0);
-  const [zoneCoordinates, setZoneCoordinates] = useState<ZoneCoordinates | null>(null);
 
   useEffect(() => {
     loadZoneDetails();
-    loadZoneCoordinates();
   }, [zone]);
 
   const loadZoneDetails = async () => {
     const db = await LocalDB.connect();
     db.transaction((tx) => {
       tx.executeSql(
-        `SELECT p.nombre_producto, SUM(v.cantidad) as cantidad, SUM(v.cantidad * CAST(p.ganancia_producto AS FLOAT)) as ganancia 
+        `SELECT p.nombre_producto, v.cantidad, v.cantidad * CAST(p.ganancia_producto AS FLOAT) as ganancia, v.latitude, v.longitude
          FROM ventas v 
          JOIN productos p ON v.producto_id = p.id 
-         WHERE v.zona = ? 
-         GROUP BY p.id`,
+         WHERE v.zona = ?`,
         [zone],
         (_, { rows }) => {
           const sales = rows.raw().map(row => ({
             nombre_producto: row.nombre_producto,
             cantidad: row.cantidad,
-            ganancia: parseFloat(row.ganancia)
+            ganancia: parseFloat(row.ganancia),
+            latitude: row.latitude,
+            longitude: row.longitude
           }));
           setProductSales(sales);
           setTotalEarnings(sales.reduce((sum, sale) => sum + sale.ganancia, 0));
@@ -54,40 +53,16 @@ const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
     });
   };
 
-  const loadZoneCoordinates = async () => {
-    const db = await LocalDB.connect();
-    db.transaction((tx) => {
-      tx.executeSql(
-        'SELECT latitude, longitude FROM zonas WHERE nombre = ?',
-        [zone],
-        (_, { rows }) => {
-          if (rows.length > 0) {
-            setZoneCoordinates({
-              latitude: rows.item(0).latitude,
-              longitude: rows.item(0).longitude
-            });
-          }
-        },
-        (_, error) => console.error('Error loading zone coordinates:', error)
-      );
-    });
+  const getMapUrl = (latitude: number, longitude: number) => {
+    const zoom = 15;
+    const apiKey = 'AIzaSyCE8AHpJQXpaOTNGQMuZ3Wu_AqTdKYfOOY'; // Replace with your Google Maps API key
+    return `https://maps.googleapis.com/maps/api/staticmap?center=${latitude},${longitude}&zoom=${zoom}&size=${MAP_WIDTH}x${MAP_HEIGHT}&maptype=roadmap&markers=color:red%7C${latitude},${longitude}&key=${apiKey}`;
   };
 
   return (
     <ScrollView style={globalStyles.container}>
       <Text style={globalStyles.title}>Zona {zone}</Text>
       
-      {zoneCoordinates && (
-        <View style={styles.mapContainer}>
-          <View style={styles.map}>
-            <View style={[styles.marker, { left: '50%', top: '50%' }]} />
-          </View>
-          <Text style={styles.coordinatesText}>
-            Lat: {zoneCoordinates.latitude.toFixed(6)}, Lon: {zoneCoordinates.longitude.toFixed(6)}
-          </Text>
-        </View>
-      )}
-
       <View style={styles.earningsContainer}>
         <Text style={globalStyles.subtitle}>Ganancias</Text>
         {productSales.map((sale, index) => (
@@ -104,9 +79,21 @@ const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
       <View style={styles.salesBreakdownContainer}>
         <Text style={globalStyles.subtitle}>Desglose de Ventas</Text>
         {productSales.map((sale, index) => (
-          <View key={index} style={styles.salesBreakdownRow}>
-            <Text style={styles.text}>{sale.nombre_producto}</Text>
-            <Text style={styles.text}>{sale.cantidad} unidades</Text>
+          <View key={index}>
+            <View style={styles.salesBreakdownRow}>
+              <Text style={styles.text}>{sale.nombre_producto}</Text>
+              <Text style={styles.text}>{sale.cantidad} unidades</Text>
+            </View>
+            <View style={styles.mapContainer}>
+              <Image
+                source={{ uri: getMapUrl(sale.latitude, sale.longitude) }}
+                style={styles.mapImage}
+                resizeMode="cover"
+              />
+              <Text style={styles.coordinatesText}>
+                Lat: {sale.latitude.toFixed(6)}, Lon: {sale.longitude.toFixed(6)}
+              </Text>
+            </View>
           </View>
         ))}
       </View>
@@ -115,30 +102,6 @@ const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
-  mapContainer: {
-    alignItems: 'center',
-    marginVertical: 20,
-  },
-  map: {
-    width: Dimensions.get('window').width - 40,
-    height: 200,
-    backgroundColor: '#E8F5E9',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  marker: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#4CAF50',
-    position: 'absolute',
-  },
-  coordinatesText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#666',
-  },
   earningsContainer: {
     flex: 1,
     marginTop: 20,
@@ -175,8 +138,26 @@ const styles = StyleSheet.create({
     borderBottomColor: '#eee',
   },
   text: {
-    color: '#000', // Ensure text is black for visibility
+    color: '#000',
+  },
+  mapContainer: {
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT + 30,
+    marginVertical: 10,
+    alignSelf: 'center',
+  },
+  mapImage: {
+    width: '100%',
+    height: MAP_HEIGHT,
+    borderRadius: 10,
+  },
+  coordinatesText: {
+    textAlign: 'center',
+    marginTop: 5,
+    fontSize: 12,
+    color: '#666',
   },
 });
 
 export default ZoneDetailScreen;
+
