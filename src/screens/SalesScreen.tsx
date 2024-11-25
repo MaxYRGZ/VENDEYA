@@ -209,7 +209,7 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
         </TouchableOpacity>
       </View>
       <View style={styles.locationContainer}>
-        <Text style={styles.zoneText}>Zona actual: {currentZone}</Text>
+        <Text style={styles.zoneText}>Colonia actual: {currentZone}</Text>
         {currentLocation && (
           <View>
             <Text style={styles.locationText}>

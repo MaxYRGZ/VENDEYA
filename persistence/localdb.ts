@@ -138,10 +138,36 @@ export default class LocalDB {
   }
 
   static async getZoneFromCoordinates(latitude: number, longitude: number): Promise<string> {
-    // This is a placeholder function. In a real application, you would use a geocoding service
-    // or a local database of geographical boundaries to determine the zone (colony) based on coordinates.
-    // For this example, we'll return a mock zone.
-    return `Zone_${Math.floor(latitude)}_${Math.floor(longitude)}`;
+    const apiKey = 'AIzaSyCE8AHpJQXpaOTNGQMuZ3Wu_AqTdKYfOOY'; // Reemplaza esto con tu API key de Google Maps
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${latitude},${longitude}&key=${apiKey}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === 'OK') {
+        // Buscar el componente de dirección que sea una colonia (neighborhood)
+        const neighborhood = data.results[0].address_components.find(
+          (component: any) => component.types.includes('neighborhood')
+        );
+
+        if (neighborhood) {
+          return neighborhood.long_name;
+        } else {
+          // Si no se encuentra una colonia, usar la localidad o la ciudad
+          const locality = data.results[0].address_components.find(
+            (component: any) => component.types.includes('locality') || component.types.includes('administrative_area_level_2')
+          );
+          return locality ? locality.long_name : 'Zona desconocida';
+        }
+      } else {
+        console.error('Error en la respuesta de la API de Google Maps:', data.status);
+        return 'Zona desconocida';
+      }
+    } catch (error) {
+      console.error('Error al obtener la zona:', error);
+      return 'Zona desconocida';
+    }
   }
 
   static async deleteAccount(userId: number) {
