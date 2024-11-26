@@ -61,8 +61,8 @@ const ZoneDetailScreen: React.FC<ZoneDetailScreenProps> = ({ route }) => {
 
   return (
     <ScrollView style={globalStyles.container}>
-      <Text style={globalStyles.title}>Colonia: {zone}</Text>
-      
+      <Text style={globalStyles.title}>Código Postal: {zone}</Text>
+
       <View style={styles.earningsContainer}>
         <Text style={globalStyles.subtitle}>Ganancias</Text>
         {productSales.map((sale, index) => (

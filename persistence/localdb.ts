@@ -146,27 +146,24 @@ export default class LocalDB {
       const data = await response.json();
 
       if (data.status === 'OK') {
-        // Buscar el componente de dirección que sea una colonia (neighborhood)
-        const neighborhood = data.results[0].address_components.find(
-          (component: any) => component.types.includes('neighborhood')
+        // Buscar el componente de dirección que sea un código postal
+        const postalCode = data.results[0].address_components.find(
+          (component: any) => component.types.includes('postal_code')
         );
 
-        if (neighborhood) {
-          return neighborhood.long_name;
+        if (postalCode) {
+          return postalCode.long_name;
         } else {
-          // Si no se encuentra una colonia, usar la localidad o la ciudad
-          const locality = data.results[0].address_components.find(
-            (component: any) => component.types.includes('locality') || component.types.includes('administrative_area_level_2')
-          );
-          return locality ? locality.long_name : 'Zona desconocida';
+          console.error('No se encontró código postal');
+          return 'Código postal no disponible';
         }
       } else {
         console.error('Error en la respuesta de la API de Google Maps:', data.status);
-        return 'Zona desconocida';
+        return 'Código postal no disponible';
       }
     } catch (error) {
-      console.error('Error al obtener la zona:', error);
-      return 'Zona desconocida';
+      console.error('Error al obtener el código postal:', error);
+      return 'Código postal no disponible';
     }
   }
 
