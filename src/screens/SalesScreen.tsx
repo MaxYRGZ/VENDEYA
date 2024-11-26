@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Alert, Image, Dimensions, BackHandler, Platform } from 'react-native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -162,7 +162,7 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
   const handleDeleteAccount = async () => {
     Alert.alert(
       'Eliminar cuenta',
-      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer.',
+      '¿Estás seguro de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y cerrará la aplicación.',
       [
         {
           text: 'Cancelar',
@@ -180,10 +180,22 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
               await AsyncStorage.removeItem('username');
               await LocalDB.deleteDatabase();
               await LocalDB.init();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
+          
+              if (Platform.OS === 'android') {
+                // Para Android, intentamos cerrar la aplicación inmediatamente
+                BackHandler.exitApp();
+              } else {
+                // Para iOS, reseteamos a la pantalla de login y mostramos un mensaje
+                navigation.reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+                Alert.alert(
+                  'Cuenta eliminada',
+                  'Tu cuenta ha sido eliminada. Por favor, cierra la aplicación manualmente.',
+                  [{ text: 'OK', onPress: () => BackHandler.exitApp() }]
+                );
+              }
             } catch (error) {
               console.error('Error deleting account:', error);
               Alert.alert('Error', 'No se pudo eliminar la cuenta');
