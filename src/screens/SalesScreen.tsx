@@ -210,7 +210,7 @@ const SalesScreen: React.FC<SalesScreenProps> = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={handleDeleteAccount} style={styles.deleteAccountButton}>
-          <Text style={styles.deleteAccountButtonText}>Eliminar</Text>
+          <Text style={styles.deleteAccountButtonText}>Eliminar cuenta</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Ventas</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Products')} style={styles.headerButton}>
